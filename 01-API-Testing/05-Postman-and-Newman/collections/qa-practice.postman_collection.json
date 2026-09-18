@@ -1,0 +1,338 @@
+{
+  "info": {
+    "name": "QA Practice — API Test Scripts",
+    "description": "Postman test-script practice: status codes, JSON schema validation, dynamic environment variables, request chaining and data-driven runs. Import into Postman, or run headless with newman.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://jsonplaceholder.typicode.com" },
+    { "key": "postId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "01 GET post — status, headers, body, response time",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// ── Status code ─────────────────────────────────────────────",
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Status text is OK', () => pm.expect(pm.response.status).to.eql('OK'));",
+              "",
+              "// ── Headers ─────────────────────────────────────────────────",
+              "pm.test('Content-Type is JSON', () => {",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+              "});",
+              "",
+              "// ── Response time (a simple non-functional check) ────────────",
+              "pm.test('Responds in under 2000ms', () => pm.expect(pm.response.responseTime).to.be.below(2000));",
+              "",
+              "// ── Body ────────────────────────────────────────────────────",
+              "const body = pm.response.json();",
+              "pm.test('Returns the requested post', () => {",
+              "    pm.expect(body.id).to.eql(1);",
+              "    pm.expect(body.userId).to.be.a('number');",
+              "    pm.expect(body.title).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "// ── JSON SCHEMA validation (structure + types in one assertion) ──",
+              "const postSchema = {",
+              "    type: 'object',",
+              "    required: ['userId', 'id', 'title', 'body'],",
+              "    properties: {",
+              "        userId: { type: 'integer', minimum: 1 },",
+              "        id:     { type: 'integer', minimum: 1 },",
+              "        title:  { type: 'string', minLength: 1 },",
+              "        body:   { type: 'string' }",
+              "    },",
+              "    additionalProperties: false",
+              "};",
+              "pm.test('Body matches the post schema', () => {",
+              "    pm.response.to.have.jsonSchema(postSchema);",
+              "});",
+              "",
+              "// Store the schema for reuse in later requests",
+              "pm.collectionVariables.set('postSchema', JSON.stringify(postSchema));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/posts/1", "host": ["{{baseUrl}}"], "path": ["posts", "1"] }
+      }
+    },
+    {
+      "name": "02 POST create — dynamic variables + chaining",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Pre-request script: build UNIQUE test data at run time",
+              "// Postman's built-in dynamic variables: {{$randomFirstName}}, {{$guid}}, {{$timestamp}} …",
+              "const runId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;",
+              "pm.collectionVariables.set('runId', runId);",
+              "pm.collectionVariables.set('newTitle', `Automated post ${runId}`);",
+              "console.log('Creating post with title:', pm.collectionVariables.get('newTitle'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201 Created', () => pm.response.to.have.status(201));",
+              "",
+              "const body = pm.response.json();",
+              "",
+              "pm.test('Echoes back exactly what we sent', () => {",
+              "    pm.expect(body.title).to.eql(pm.collectionVariables.get('newTitle'));",
+              "    pm.expect(body.userId).to.eql(1);",
+              "});",
+              "",
+              "pm.test('Server assigned an id', () => {",
+              "    pm.expect(body).to.have.property('id');",
+              "    pm.expect(body.id).to.be.a('number');",
+              "});",
+              "",
+              "// ── CHAINING: save a value for the NEXT request ─────────────",
+              "// ⚠️ SCOPE PRECEDENCE (a classic Postman trap):",
+              "//    local > data > environment > collection > global",
+              "// `createdPostId` also exists in the ENVIRONMENT file, so writing it only to the",
+              "// collection scope would be ignored and {{createdPostId}} would resolve to ''.",
+              "// Always write a chained value to the scope that actually wins.",
+              "pm.environment.set('createdPostId', body.id);",
+              "pm.collectionVariables.set('createdPostId', body.id);",
+              "console.log('Saved createdPostId =', body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"{{newTitle}}\",\n  \"body\": \"Created by the QA practice collection\",\n  \"userId\": 1\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/posts", "host": ["{{baseUrl}}"], "path": ["posts"] }
+      }
+    },
+    {
+      "name": "03 GET by chained id — uses the variable from step 02",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// The URL used {{createdPostId}}, saved by the previous request.",
+              "pm.test('Chained variable was set', () => {",
+              "    const id = pm.environment.get('createdPostId');",
+              "    pm.expect(id, 'createdPostId from request 02').to.not.be.undefined;",
+              "    pm.expect(String(id), 'must not be empty, or the URL becomes /posts/').to.not.eql('');",
+              "});",
+              "",
+              "pm.test('Reusing the saved id returns a valid response', () => {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+              "});",
+              "",
+              "// ⚠️ REAL BEHAVIOUR WORTH KNOWING: jsonplaceholder FAKES writes. It returned 201 with",
+              "// id 101, but nothing was stored, so this GET comes back 200 with an EMPTY body {}.",
+              "// That is exactly the 'created but not persisted' defect you hunt for on a real API:",
+              "// always read the resource back after creating it.",
+              "let body = null;",
+              "try { body = pm.response.json(); } catch (e) { body = null; }",
+              "const persisted = body && typeof body === 'object' && Object.keys(body).length > 0;",
+              "",
+              "pm.test('Created resource is readable back (known limitation of this mock API)', () => {",
+              "    if (!persisted) {",
+              "        console.log(`⚠️ id ${pm.collectionVariables.get('createdPostId')} was NOT persisted ` +",
+              "                    `(status ${pm.response.code}). Expected for jsonplaceholder — a CRITICAL BUG on a real API.`);",
+              "        pm.expect(persisted, 'mock API does not persist writes').to.be.false;",
+              "    } else {",
+              "        pm.response.to.have.jsonSchema(JSON.parse(pm.collectionVariables.get('postSchema')));",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/posts/{{createdPostId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["posts", "{{createdPostId}}"]
+        }
+      }
+    },
+    {
+      "name": "04 GET list — array schema + data quality checks",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const users = pm.response.json();",
+              "",
+              "pm.test('Returns a non-empty array', () => {",
+              "    pm.expect(users).to.be.an('array').that.is.not.empty;",
+              "});",
+              "",
+              "pm.test('Array matches the user schema', () => {",
+              "    pm.response.to.have.jsonSchema({",
+              "        type: 'array',",
+              "        minItems: 1,",
+              "        items: {",
+              "            type: 'object',",
+              "            required: ['id', 'name', 'username', 'email'],",
+              "            properties: {",
+              "                id: { type: 'integer' },",
+              "                name: { type: 'string' },",
+              "                email: { type: 'string', pattern: '^\\\\S+@\\\\S+\\\\.\\\\S+$' },",
+              "                address: { type: 'object', required: ['city'] }",
+              "            }",
+              "        }",
+              "    });",
+              "});",
+              "",
+              "// Data-quality assertions across the whole list",
+              "pm.test('All ids are unique', () => {",
+              "    const ids = users.map(u => u.id);",
+              "    pm.expect(new Set(ids).size).to.eql(ids.length);",
+              "});",
+              "",
+              "pm.test('No user has an empty name', () => {",
+              "    users.forEach(u => pm.expect(u.name, `user ${u.id}`).to.not.be.empty);",
+              "});",
+              "",
+              "// Save one id for other requests",
+              "pm.collectionVariables.set('firstUserId', users[0].id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+      }
+    },
+    {
+      "name": "05 GET filtered — query params + relational check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "",
+              "const posts = pm.response.json();",
+              "const expectedUserId = Number(pm.collectionVariables.get('firstUserId'));",
+              "",
+              "pm.test(`Every post belongs to user ${expectedUserId}`, () => {",
+              "    pm.expect(posts).to.be.an('array').that.is.not.empty;",
+              "    posts.forEach(p => pm.expect(p.userId, `post ${p.id}`).to.eql(expectedUserId));",
+              "});",
+              "",
+              "pm.test('Filter actually filtered (fewer than all posts)', () => {",
+              "    pm.expect(posts.length).to.be.below(100);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/posts?userId={{firstUserId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["posts"],
+          "query": [{ "key": "userId", "value": "{{firstUserId}}" }]
+        }
+      }
+    },
+    {
+      "name": "06 Negative — 404 for a missing resource",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 404', () => pm.response.to.have.status(404));",
+              "",
+              "pm.test('Error response does not leak internals', () => {",
+              "    const text = pm.response.text().toLowerCase();",
+              "    ['sql', 'stack', 'exception', 'at /', 'select '].forEach(leak => {",
+              "        pm.expect(text, `should not contain \"${leak}\"`).to.not.include(leak);",
+              "    });",
+              "});",
+              "",
+              "pm.test('Responds quickly even when not found', () => {",
+              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/posts/99999", "host": ["{{baseUrl}}"], "path": ["posts", "99999"] }
+      }
+    },
+    {
+      "name": "07 Data-driven — one request, many CSV rows",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Run with:  npm run test:data   (newman ... -d data/posts-data.csv)",
+              "// Each CSV row supplies {{postId}}, {{expectedUserId}} and {{expectedStatus}}.",
+              "const postId = pm.iterationData.get('postId');",
+              "",
+              "if (postId === null || postId === undefined) {",
+              "    // No data file supplied — skip instead of failing, so a plain run stays green.",
+              "    console.log('ℹ️  No data file: run `npm run test:data` to execute this request per CSV row.');",
+              "    pm.test.skip('Data-driven checks (run with -d data/posts-data.csv)', () => {});",
+              "} else {",
+              "    const expectedStatus = Number(pm.iterationData.get('expectedStatus'));",
+              "",
+              "    pm.test(`Status is ${expectedStatus} for post ${postId}`, () => {",
+              "        pm.response.to.have.status(expectedStatus);",
+              "    });",
+              "",
+              "    if (expectedStatus === 200) {",
+              "        const expectedUserId = Number(pm.iterationData.get('expectedUserId'));",
+              "        pm.test(`Post ${postId} belongs to user ${expectedUserId}`, () => {",
+              "            pm.expect(pm.response.json().userId).to.eql(expectedUserId);",
+              "        });",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/posts/{{postId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["posts", "{{postId}}"]
+        }
+      }
+    }
+  ]
+}

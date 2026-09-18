@@ -1,0 +1,14 @@
+{
+  "name": "performance-testing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "server": "node target-app/server.js",
+    "load:autocannon": "node node-load/autocannon-test.js",
+    "load:journey": "node node-load/mini-load-tester.js"
+  },
+  "devDependencies": {
+    "autocannon": "^8.0.0"
+  }
+}

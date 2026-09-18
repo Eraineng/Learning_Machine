@@ -1,0 +1,15 @@
+/* CSS injected only while taking screenshots: hide anything unstable. */
+#ad,
+#timestamp,
+#session {
+  visibility: hidden !important;
+}
+
+#spinner {
+  animation: none !important;
+}
+
+/* Common real-world additions:
+[data-testid="live-chat"], .cookie-banner, .carousel, video, iframe[src*="ads"] { display: none !important; }
+*, *::before, *::after { transition: none !important; animation: none !important; }
+*/

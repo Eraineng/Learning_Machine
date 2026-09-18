@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<!-- ❌ This page is FULL of accessibility problems on purpose. Compare it with accessible.html. -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Signup</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    .fake-button { background: #ddd; padding: 8px 14px; display: inline-block; cursor: pointer; }
+    .low-contrast { color: #b0b0b0; background: #ffffff; }
+    .field { margin: 12px 0; }
+    *:focus { outline: none; }  /* ❌ removes the focus indicator */
+  </style>
+</head>
+<body>
+  <!-- ❌ no <html lang>, no landmarks (header/nav/main), h1 skipped -->
+  <div class="header">
+    <img src="logo.png">                      <!-- ❌ no alt text -->
+    <div class="fake-button" onclick="alert('menu')">Menu</div>  <!-- ❌ div as a button: not focusable -->
+  </div>
+
+  <h3>Create your account</h3>                <!-- ❌ starts at h3, skipping h1/h2 -->
+  <p class="low-contrast">All fields are required.</p>  <!-- ❌ contrast 2.3:1 -->
+
+  <form>
+    <div class="field">
+      Email                                   <!-- ❌ plain text, not a <label for> -->
+      <input type="text" id="email">
+    </div>
+    <div class="field">
+      Password
+      <input type="text" id="pw">             <!-- ❌ should be type="password" -->
+    </div>
+    <div class="field">
+      <input type="checkbox" id="terms"> I accept the terms   <!-- ❌ no label association -->
+    </div>
+    <div class="fake-button" onclick="submitForm()">Sign up</div>  <!-- ❌ not a real button -->
+  </form>
+
+  <p style="color:red" id="error"></p>        <!-- ❌ error not announced, colour-only meaning -->
+
+  <table>                                     <!-- ❌ no caption, no th scope -->
+    <tr><td>Plan</td><td>Price</td></tr>
+    <tr><td>Basic</td><td>$5</td></tr>
+  </table>
+
+  <a href="#">Click here</a>                  <!-- ❌ meaningless link text -->
+
+  <script>
+    function submitForm() {
+      document.getElementById('error').textContent = 'Email is invalid';
+    }
+  </script>
+</body>
+</html>

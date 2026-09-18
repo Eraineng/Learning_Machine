@@ -1,0 +1,6 @@
+postId,expectedUserId,expectedStatus,description
+1,1,200,first post belongs to user 1
+11,2,200,post 11 belongs to user 2
+50,5,200,post 50 belongs to user 5
+100,10,200,last post belongs to user 10
+99999,,404,non-existent post returns 404

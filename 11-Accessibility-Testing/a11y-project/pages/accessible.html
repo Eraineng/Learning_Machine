@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!-- ✅ The same page, built accessibly. Every fix is commented. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create your account — Demo Shop</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; color: #1a1a1a; background: #fff; }
+    .skip-link { position: absolute; left: -9999px; }
+    .skip-link:focus { left: 8px; top: 8px; background: #000; color: #fff; padding: 8px; }
+    :focus-visible { outline: 3px solid #0b5fff; outline-offset: 2px; }  /* ✅ visible focus */
+    .hint { color: #595959; }                    /* ✅ 7:1 contrast on white */
+    .error { color: #b3261e; font-weight: bold; }
+    .field { margin: 12px 0; }
+    label { display: block; margin-bottom: 4px; }
+    table { border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #767676; padding: 6px 12px; text-align: left; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a> <!-- ✅ skip link for keyboard users -->
+
+  <header>
+    <img src="logo.png" alt="Demo Shop logo">              <!-- ✅ meaningful alt -->
+    <nav aria-label="Main">
+      <button type="button" aria-expanded="false" aria-controls="menu">Menu</button> <!-- ✅ real button -->
+      <ul id="menu" hidden><li><a href="/products">Products</a></li></ul>
+    </nav>
+  </header>
+
+  <main id="main">
+    <h1>Create your account</h1>                            <!-- ✅ one h1, logical order -->
+    <p class="hint">All fields are required.</p>
+
+    <form novalidate>
+      <div class="field">
+        <label for="email">Email address</label>            <!-- ✅ label tied to input -->
+        <input type="email" id="email" name="email" autocomplete="email"
+               required aria-describedby="email-hint">
+        <span id="email-hint" class="hint">We'll never share it.</span>
+      </div>
+
+      <div class="field">
+        <label for="pw">Password</label>
+        <input type="password" id="pw" name="password" autocomplete="new-password"
+               required minlength="8" aria-describedby="pw-hint">
+        <span id="pw-hint" class="hint">At least 8 characters, including a number.</span>
+      </div>
+
+      <div class="field">
+        <input type="checkbox" id="terms" name="terms" required>
+        <label for="terms">I accept the terms and conditions</label>
+      </div>
+
+      <button type="submit">Sign up</button>                 <!-- ✅ real, focusable, keyboard-operable -->
+    </form>
+
+    <!-- ✅ errors announced to screen readers, not colour-only -->
+    <p id="error" class="error" role="alert" aria-live="assertive"></p>
+
+    <h2>Plans</h2>
+    <table>
+      <caption>Subscription plans and monthly prices</caption>  <!-- ✅ caption -->
+      <thead>
+        <tr><th scope="col">Plan</th><th scope="col">Price</th></tr> <!-- ✅ header cells with scope -->
+      </thead>
+      <tbody>
+        <tr><th scope="row">Basic</th><td>$5</td></tr>
+        <tr><th scope="row">Pro</th><td>$15</td></tr>
+      </tbody>
+    </table>
+
+    <p><a href="/pricing">See full pricing details</a></p>    <!-- ✅ descriptive link text -->
+  </main>
+
+  <footer><p>© 2026 Demo Shop</p></footer>
+
+  <script>
+    document.querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email');
+      const error = document.getElementById('error');
+      if (!email.value.includes('@')) {
+        error.textContent = 'Error: please enter a valid email address.';
+        email.setAttribute('aria-invalid', 'true');
+        email.focus();                                        // ✅ move focus to the problem
+      } else {
+        error.textContent = 'Account created.';
+        email.removeAttribute('aria-invalid');
+      }
+    });
+  </script>
+</body>
+</html>

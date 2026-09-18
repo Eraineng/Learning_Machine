@@ -1,0 +1,17 @@
+{
+  "name": "unit-testing-vitest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^3.2.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.2.0"
+  }
+}

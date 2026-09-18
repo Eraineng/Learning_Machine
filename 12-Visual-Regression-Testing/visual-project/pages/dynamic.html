@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!-- A page full of things that change on every load — the enemy of visual testing. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Dynamic content</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; background:#fff; color:#1a1a1a; }
+    .box { border: 1px solid #ccc; border-radius: 8px; padding: 16px; margin-bottom: 16px; width: 420px; }
+    #spinner { width: 40px; height: 40px; border: 5px solid #eee; border-top-color: #0b5fff; border-radius: 50%;
+               animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .stable { font-size: 18px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="box"><span class="stable">Stable heading that must never change</span></div>
+  <div class="box">Generated at: <span id="timestamp"></span></div>
+  <div class="box">Random session id: <span id="session"></span></div>
+  <div class="box">Animated spinner:<br><div id="spinner"></div></div>
+  <div class="box">Ad banner: <span id="ad"></span></div>
+
+  <script>
+    document.getElementById('timestamp').textContent = new Date().toISOString();
+    document.getElementById('session').textContent = Math.random().toString(36).slice(2, 12);
+    const ads = ['Buy shoes now!', 'Cheap flights ✈', 'Learn testing today', '50% off mugs'];
+    document.getElementById('ad').textContent = ads[Math.floor(Math.random() * ads.length)];
+  </script>
+</body>
+</html>

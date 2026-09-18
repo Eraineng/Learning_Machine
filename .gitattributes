@@ -1,0 +1,13 @@
+# Normalize line endings: store LF in the repo, check out native on Windows.
+# Keeps the GitHub Actions runners (Linux) happy and avoids noisy CRLF diffs.
+* text=auto eol=lf
+
+# Binary files — never convert
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.webm binary

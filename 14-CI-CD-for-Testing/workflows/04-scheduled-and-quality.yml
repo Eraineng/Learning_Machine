@@ -1,0 +1,86 @@
+# Scheduled jobs: the slow, expensive or noisy checks that shouldn't block every PR.
+name: Nightly Quality
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # every night at 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update && sudo apt-get install k6
+      - name: Start the target app
+        working-directory: 06-Performance-Testing/perf-project
+        run: npm run server &
+      - name: Load test (thresholds fail the build)
+        working-directory: 06-Performance-Testing/perf-project
+        run: k6 run k6-scripts/02-load.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: k6-results, path: 06-Performance-Testing/perf-project/*.json }
+
+  security:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, security-events: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Dependency vulnerabilities
+        run: npm audit --audit-level=high
+        continue-on-error: true # report, don't block the nightly
+
+      - name: Security tests
+        working-directory: 05-Security-Testing/security-project
+        run: |
+          npm ci
+          npm test
+
+      - name: Secret scanning
+        uses: gitleaks/gitleaks-action@v2
+        # ⚠️ A ${{ }} expression cannot start a value inside { } flow style — use block style or quote it
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: ${{ secrets.STAGING_URL }}
+          fail_action: false
+
+  flaky-test-hunt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run the suite 5 times to expose flakiness
+        run: npx playwright test --repeat-each=5 --retries=0
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: flaky-report, path: playwright-report/ }
+
+  notify:
+    needs: [performance, security, flaky-test-hunt]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify the team
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"🌙 Nightly quality run failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
+            ${{ secrets.SLACK_WEBHOOK }}

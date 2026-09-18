@@ -1,0 +1,74 @@
+### HOW TO USE THIS FILE
+# 1. Install the VS Code extension "REST Client" (by Huachao Mao)
+# 2. A small "Send Request" link appears above each request — click it
+# 3. The response (status, headers, body) opens on the right
+# Requests are separated by ###
+
+@base = https://jsonplaceholder.typicode.com
+
+### 1. GET one resource (path parameter)
+GET {{base}}/posts/1
+
+### 2. GET a list
+GET {{base}}/users
+
+### 3. GET with query parameters (filter)
+GET {{base}}/posts?userId=1
+
+### 4. GET something that doesn't exist → expect 404
+GET {{base}}/posts/99999
+
+### 5. HEAD — headers only, no body
+HEAD {{base}}/posts/1
+
+### 6. POST — create (look at the status: 201, not 200)
+POST {{base}}/posts
+Content-Type: application/json
+
+{
+  "title": "Learning HTTP",
+  "body": "My first POST request",
+  "userId": 1
+}
+
+### 7. PUT — replace the whole resource
+PUT {{base}}/posts/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "title": "Replaced",
+  "body": "Everything is replaced",
+  "userId": 1
+}
+
+### 8. PATCH — change only one field
+PATCH {{base}}/posts/1
+Content-Type: application/json
+
+{
+  "title": "Only the title changed"
+}
+
+### 9. DELETE
+DELETE {{base}}/posts/1
+
+### 10. Nested resource: comments of post 1
+GET {{base}}/posts/1/comments
+
+### 11. See your own request echoed back (headers, query, body)
+POST https://httpbin.org/anything?lesson=1
+Content-Type: application/json
+X-My-Header: hello
+
+{ "learning": "http" }
+
+### 12. Ask for a specific status code
+GET https://httpbin.org/status/418
+
+### 13. Authorization header (httpbin checks it)
+GET https://httpbin.org/bearer
+Authorization: Bearer my-fake-token
+
+### 14. Same endpoint WITHOUT a token → expect 401
+GET https://httpbin.org/bearer

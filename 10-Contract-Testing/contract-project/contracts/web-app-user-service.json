@@ -1,0 +1,86 @@
+{
+  "consumer": "web-app",
+  "provider": "user-service",
+  "interactions": [
+    {
+      "description": "a request for user 1",
+      "providerState": "user 1 exists",
+      "request": {
+        "method": "GET",
+        "path": "/users/1"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": {
+            "match": "type",
+            "value": 1
+          },
+          "name": {
+            "match": "type",
+            "value": "Ann Tester"
+          },
+          "email": {
+            "match": "regex",
+            "regex": "^[^@]+@[^@]+\\.[a-z]+$",
+            "value": "ann@example.com"
+          },
+          "plan": {
+            "match": "type",
+            "value": "pro"
+          }
+        }
+      }
+    },
+    {
+      "description": "a request for a list of users",
+      "providerState": "three users exist",
+      "request": {
+        "method": "GET",
+        "path": "/users"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "match": "eachLike",
+          "value": {
+            "id": {
+              "match": "type",
+              "value": 1
+            },
+            "name": {
+              "match": "type",
+              "value": "User 1"
+            },
+            "email": {
+              "match": "type",
+              "value": "user1@example.com"
+            },
+            "plan": {
+              "match": "type",
+              "value": "free"
+            }
+          },
+          "min": 3
+        }
+      }
+    },
+    {
+      "description": "a request for a user that does not exist",
+      "providerState": "no users exist",
+      "request": {
+        "method": "GET",
+        "path": "/users/999"
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "error": {
+            "match": "type",
+            "value": "user not found"
+          }
+        }
+      }
+    }
+  ]
+}

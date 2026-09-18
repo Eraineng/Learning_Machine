@@ -1,0 +1,69 @@
+# Playwright E2E tests, split across machines (sharding) and merged into one report.
+name: E2E Tests
+
+on:
+  pull_request:
+  schedule:
+    - cron: '0 3 * * *' # nightly at 03:00 UTC
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false # don't cancel other shards when one fails
+      matrix:
+        shard: [1, 2, 3, 4] # 4 machines in parallel
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: 07-Playwright-UI-Automation/playwright-project/package-lock.json }
+
+      - working-directory: 07-Playwright-UI-Automation/playwright-project
+        run: npm ci
+
+      - name: Install browsers
+        working-directory: 07-Playwright-UI-Automation/playwright-project
+        run: npx playwright install --with-deps chromium # --with-deps installs OS libraries too
+
+      - name: Run tests (shard ${{ matrix.shard }}/4)
+        working-directory: 07-Playwright-UI-Automation/playwright-project
+        run: npx playwright test --shard=${{ matrix.shard }}/4
+        env:
+          CI: true # Playwright enables retries and forbids test.only when CI=true
+
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: 07-Playwright-UI-Automation/playwright-project/blob-report/
+          retention-days: 3
+
+  merge-reports:
+    needs: [e2e]
+    if: always() # run even if some shards failed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - working-directory: 07-Playwright-UI-Automation/playwright-project
+        run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: blob-report-*
+          path: 07-Playwright-UI-Automation/playwright-project/all-blob-reports
+          merge-multiple: true
+
+      - name: Merge into one HTML report
+        working-directory: 07-Playwright-UI-Automation/playwright-project
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: 07-Playwright-UI-Automation/playwright-project/playwright-report/
+          retention-days: 14

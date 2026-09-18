@@ -1,0 +1,49 @@
+# Reporting results back to the pull request, and enforcing quality gates.
+name: PR Quality Gates
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write # needed to comment on the PR
+  checks: write
+
+jobs:
+  test-and-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+
+      - name: Run tests (JUnit output for reporting)
+        run: npx vitest run --reporter=junit --outputFile=test-results/junit.xml
+        continue-on-error: true # let the reporter publish results before failing
+
+      - name: Publish test results as a check
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Test results
+          path: test-results/junit.xml
+          reporter: jest-junit
+          fail-on-error: true
+
+      - name: Comment coverage on the PR
+        uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
+
+      - name: Quality gate — coverage must not drop
+        run: |
+          COVERAGE=$(node -p "require('./coverage/coverage-summary.json').total.lines.pct")
+          echo "Line coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "::error::Coverage $COVERAGE% is below the 80% gate"
+            exit 1
+          fi
+
+      - name: Annotate failures inline in the diff
+        if: failure()
+        run: echo "::error file=src/cart.ts,line=42::Test failed for this line"

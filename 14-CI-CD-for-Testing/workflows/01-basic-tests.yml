@@ -1,0 +1,39 @@
+# Basic CI: run unit + integration tests on every push and pull request.
+# Copy to .github/workflows/ in a real repository.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # lets you run it manually from the Actions tab
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm # cache ~/.npm between runs → much faster installs
+          cache-dependency-path: 08-Unit-Testing/unit-project/package-lock.json
+
+      - name: Install dependencies
+        working-directory: 08-Unit-Testing/unit-project
+        run: npm ci # ci = clean, reproducible install from the lock file (never `npm install` in CI)
+
+      - name: Run unit tests with coverage
+        working-directory: 08-Unit-Testing/unit-project
+        run: npm run coverage
+
+      - name: Upload coverage report
+        if: always() # ⭐ publish artifacts even when tests fail — that's when you need them
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: 08-Unit-Testing/unit-project/coverage/
+          retention-days: 7

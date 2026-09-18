@@ -1,0 +1,45 @@
+# ── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
+.npm/
+npm-debug.log*
+yarn-error.log*
+
+# ── Test run artifacts (regenerated on every run) ────────────────────────────
+playwright-report/
+blob-report/
+test-results/
+coverage/
+reports/
+*.lcov
+junit.xml
+
+# ⚠️ Playwright visual BASELINES are intentionally committed — do not ignore them:
+#    12-Visual-Regression-Testing/**/tests/*-snapshots/*.png
+
+# ── Local databases / generated data ─────────────────────────────────────────
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ── Secrets & local config ───────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+playwright/.auth/
+*.pem
+*.key
+*.p12
+auth.json
+
+# ── Browsers / caches ────────────────────────────────────────────────────────
+.cache/
+ms-playwright/
+
+# ── Editors & OS ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

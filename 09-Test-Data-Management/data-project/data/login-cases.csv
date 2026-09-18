@@ -1,0 +1,8 @@
+username,password,expectedStatus,description
+standard_user,secret_sauce,200,valid credentials
+standard_user,wrong_pass,401,wrong password
+,secret_sauce,400,missing username
+standard_user,,400,missing password
+locked_out_user,secret_sauce,423,locked account
+"user,with,commas",secret_sauce,401,unknown user with commas in the name
+üñí©ödé_user,secret_sauce,401,unicode username
