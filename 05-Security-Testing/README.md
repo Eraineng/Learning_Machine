@@ -31,7 +31,13 @@ npm run start:secure     # the fixed app at http://127.0.0.1:4002
 npm run audit            # scan dependencies for known vulnerabilities
 ```
 
+## New to security? Start here 🔰
+If you know nothing about penetration testing, read **`06-Pentest-From-Zero/`** first — it explains the
+vocabulary, how real engagements work, and links to free legal video courses and labs, with an 8-week plan.
+Then come back to the hands-on lessons below.
+
 ## Checklist
+- [ ] `06-Pentest-From-Zero/README.md`: 🔰 zero-knowledge intro + video/lab links + 8-week plan
 - [ ] `01-Security-Fundamentals/lesson.md`: CIA, threats, OWASP Top 10
 - [ ] `02-OWASP-Top-10-Hands-On/lesson.md`: the vulnerabilities in the app
 - [ ] `03-Auth-and-Session/lesson.md`: authentication, sessions, tokens
